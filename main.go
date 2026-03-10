@@ -44,6 +44,11 @@ func (app *App) Update() error {
 		app.grid.ToggleSwitch(gridX, gridY)
 	}
 
+	// NUM1 place light
+	if inpututil.IsKeyJustPressed(ebiten.Key1) {
+		app.grid.SetTile(gridX, gridY, engine.Light)
+	}
+
 	app.grid.UpdatePower()
 
 	return nil
@@ -74,6 +79,11 @@ func (app *App) Draw(screen *ebiten.Image) {
 				c = color.RGBA{0, 100, 0, 255} // Unpowered switch (Dark Green)
 				if tile.Powered {
 					c = color.RGBA{50, 255, 50, 255} // Powered switch (Bright Green)
+				}
+			} else if tile.Type == engine.Light {
+				c = color.RGBA{145, 145, 0, 255} // Unpowered light (Dark Yellow)
+				if tile.Powered {
+					c = color.RGBA{255, 255, 0, 255} // Powered light (Yellow)
 				}
 			}
 

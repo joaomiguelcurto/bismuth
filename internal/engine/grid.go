@@ -52,7 +52,10 @@ func (g *Grid) UpdatePower() {
 	powerSources := make([]Point, 0)
 	for i := 0; i < g.Width; i++ {
 		for j := 0; j < g.Height; j++ {
-			if g.Tiles[i][j].Type == Wire {
+			switch g.Tiles[i][j].Type {
+			case Wire:
+				g.Tiles[i][j].Powered = false
+			case Light:
 				g.Tiles[i][j].Powered = false
 			}
 			if g.Tiles[i][j].Type == Switch && g.Tiles[i][j].Powered {
@@ -72,24 +75,32 @@ func (g *Grid) UpdatePower() {
 			if g.Tiles[up.X][up.Y].Type == Wire && !g.Tiles[up.X][up.Y].Powered {
 				g.Tiles[up.X][up.Y].Powered = true
 				powerSources = append(powerSources, up)
+			} else if g.Tiles[up.X][up.Y].Type == Light && !g.Tiles[up.X][up.Y].Powered {
+				g.Tiles[up.X][up.Y].Powered = true
 			}
 		}
 		if down.X >= 0 && down.X < g.Width && down.Y >= 0 && down.Y < g.Height {
 			if g.Tiles[down.X][down.Y].Type == Wire && !g.Tiles[down.X][down.Y].Powered {
 				g.Tiles[down.X][down.Y].Powered = true
 				powerSources = append(powerSources, down)
+			} else if g.Tiles[down.X][down.Y].Type == Light && !g.Tiles[down.X][down.Y].Powered {
+				g.Tiles[down.X][down.Y].Powered = true
 			}
 		}
 		if left.X >= 0 && left.X < g.Width && left.Y >= 0 && left.Y < g.Height {
 			if g.Tiles[left.X][left.Y].Type == Wire && !g.Tiles[left.X][left.Y].Powered {
 				g.Tiles[left.X][left.Y].Powered = true
 				powerSources = append(powerSources, left)
+			} else if g.Tiles[left.X][left.Y].Type == Light && !g.Tiles[left.X][left.Y].Powered {
+				g.Tiles[left.X][left.Y].Powered = true
 			}
 		}
 		if right.X >= 0 && right.X < g.Width && right.Y >= 0 && right.Y < g.Height {
 			if g.Tiles[right.X][right.Y].Type == Wire && !g.Tiles[right.X][right.Y].Powered {
 				g.Tiles[right.X][right.Y].Powered = true
 				powerSources = append(powerSources, right)
+			} else if g.Tiles[right.X][right.Y].Type == Light && !g.Tiles[right.X][right.Y].Powered {
+				g.Tiles[right.X][right.Y].Powered = true
 			}
 		}
 	}
