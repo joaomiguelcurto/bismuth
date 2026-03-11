@@ -79,8 +79,17 @@ func (g *Grid) ToggleSwitch(x, y int) {
 	}
 }
 
+func (g *Grid) PressButton(x, y int) {
+	if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
+		if g.Tiles[x][y].Type == Button {
+			g.Tiles[x][y].Powered = true
+			g.Tiles[x][y].Timer = 120 // sets timer to 120 frames (60 frames per second)
+		}
+	}
+}
+
 func (g *Grid) UpdatePower() {
-	powerSource_Switch := make([]Point, 0)
+	powerSource := make([]Point, 0)
 	for i := 0; i < g.Width; i++ {
 		for j := 0; j < g.Height; j++ {
 			if g.Tiles[i][j].Type == NotGate {
@@ -112,11 +121,24 @@ func (g *Grid) UpdatePower() {
 					}
 				}
 			}
-			if g.Tiles[i][j].Type == Switch && g.Tiles[i][j].Powered || g.Tiles[i][j].Type == NotGate && g.Tiles[i][j].Powered {
-				powerSource_Switch = append(powerSource_Switch, Point{X: i, Y: j})
+
+			isSwitch := g.Tiles[i][j].Type == Switch
+			isButton := g.Tiles[i][j].Type == Button
+			isNotGate := g.Tiles[i][j].Type == NotGate
+
+			if (isSwitch || isButton || isNotGate) && g.Tiles[i][j].Powered {
+				powerSource = append(powerSource, Point{X: i, Y: j})
+			}
+			if g.Tiles[i][j].Type == Button {
+				if g.Tiles[i][j].Timer > 0 {
+					g.Tiles[i][j].Timer--
+				} else {
+					g.Tiles[i][j].Powered = false
+				}
 			}
 		}
 	}
+
 	for i := 0; i < g.Width; i++ {
 		for j := 0; j < g.Height; j++ {
 			switch g.Tiles[i][j].Type {
@@ -127,9 +149,10 @@ func (g *Grid) UpdatePower() {
 			}
 		}
 	}
-	for len(powerSource_Switch) > 0 {
-		currentSource := powerSource_Switch[0]
-		powerSource_Switch = powerSource_Switch[1:]
+
+	for len(powerSource) > 0 {
+		currentSource := powerSource[0]
+		powerSource = powerSource[1:]
 		up := Point{X: currentSource.X, Y: currentSource.Y - 1}
 		down := Point{X: currentSource.X, Y: currentSource.Y + 1}
 		left := Point{X: currentSource.X - 1, Y: currentSource.Y}
@@ -145,7 +168,7 @@ func (g *Grid) UpdatePower() {
 			if up.X >= 0 && up.X < g.Width && up.Y >= 0 && up.Y < g.Height {
 				if g.Tiles[up.X][up.Y].Type == Wire && !g.Tiles[up.X][up.Y].Powered {
 					g.Tiles[up.X][up.Y].Powered = true
-					powerSource_Switch = append(powerSource_Switch, up)
+					powerSource = append(powerSource, up)
 				} else if g.Tiles[up.X][up.Y].Type == Light && !g.Tiles[up.X][up.Y].Powered {
 					g.Tiles[up.X][up.Y].Powered = true
 				}
@@ -155,7 +178,7 @@ func (g *Grid) UpdatePower() {
 			if down.X >= 0 && down.X < g.Width && down.Y >= 0 && down.Y < g.Height {
 				if g.Tiles[down.X][down.Y].Type == Wire && !g.Tiles[down.X][down.Y].Powered {
 					g.Tiles[down.X][down.Y].Powered = true
-					powerSource_Switch = append(powerSource_Switch, down)
+					powerSource = append(powerSource, down)
 				} else if g.Tiles[down.X][down.Y].Type == Light && !g.Tiles[down.X][down.Y].Powered {
 					g.Tiles[down.X][down.Y].Powered = true
 				}
@@ -165,7 +188,7 @@ func (g *Grid) UpdatePower() {
 			if left.X >= 0 && left.X < g.Width && left.Y >= 0 && left.Y < g.Height {
 				if g.Tiles[left.X][left.Y].Type == Wire && !g.Tiles[left.X][left.Y].Powered {
 					g.Tiles[left.X][left.Y].Powered = true
-					powerSource_Switch = append(powerSource_Switch, left)
+					powerSource = append(powerSource, left)
 				} else if g.Tiles[left.X][left.Y].Type == Light && !g.Tiles[left.X][left.Y].Powered {
 					g.Tiles[left.X][left.Y].Powered = true
 				}
@@ -175,7 +198,7 @@ func (g *Grid) UpdatePower() {
 			if right.X >= 0 && right.X < g.Width && right.Y >= 0 && right.Y < g.Height {
 				if g.Tiles[right.X][right.Y].Type == Wire && !g.Tiles[right.X][right.Y].Powered {
 					g.Tiles[right.X][right.Y].Powered = true
-					powerSource_Switch = append(powerSource_Switch, right)
+					powerSource = append(powerSource, right)
 				} else if g.Tiles[right.X][right.Y].Type == Light && !g.Tiles[right.X][right.Y].Powered {
 					g.Tiles[right.X][right.Y].Powered = true
 				}

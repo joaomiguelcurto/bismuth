@@ -39,12 +39,13 @@ func (app *App) Update() error {
 		app.grid.SetTile(gridX, gridY, engine.Switch, engine.None)
 	}
 
-	// SPACE toggle switch on/off
+	// SPACE toggle switch/button on/off
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		app.grid.ToggleSwitch(gridX, gridY)
+		app.grid.PressButton(gridX, gridY)
 	}
 
-	// SPACE rotate gates (left/right/up/down)
+	// R rotate gates (left/right/up/down)
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		app.grid.RotateGate(gridX, gridY)
 	}
@@ -57,6 +58,11 @@ func (app *App) Update() error {
 	// NUM2 place NotGate
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {
 		app.grid.SetTile(gridX, gridY, engine.NotGate, engine.Up)
+	}
+
+	// NUM3 place button
+	if inpututil.IsKeyJustPressed(ebiten.Key3) {
+		app.grid.SetTile(gridX, gridY, engine.Button, engine.None)
 	}
 
 	// BACKSPACE sets tile to empty
@@ -104,6 +110,11 @@ func (app *App) Draw(screen *ebiten.Image) {
 				c = color.RGBA{100, 0, 150, 255} // Unpowered gate (Dark Purple)
 				if tile.Powered {
 					c = color.RGBA{200, 50, 255, 255} // Powered gate (Bright Neon Purple)
+				}
+			} else if tile.Type == engine.Button {
+				c = color.RGBA{0, 70, 150, 255} // Unpowered button (Dark Blue)
+				if tile.Powered {
+					c = color.RGBA{50, 150, 255, 255} // Powered button (Bright Blue)
 				}
 			}
 

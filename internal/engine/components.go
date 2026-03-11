@@ -8,6 +8,7 @@ const (
 	Empty ComponentType = iota
 	Wire
 	Switch
+	Button
 	Light
 	NotGate
 )
@@ -25,4 +26,5 @@ type Tile struct {
 	Type    ComponentType
 	Powered bool
 	Facing  Direction
+	Timer   int
 }
