@@ -31,12 +31,12 @@ func (app *App) Update() error {
 
 	// LCLICK place wire
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		app.grid.SetTile(gridX, gridY, engine.Wire)
+		app.grid.SetTile(gridX, gridY, engine.Wire, engine.None)
 	}
 
 	// RCLICK place switch
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
-		app.grid.SetTile(gridX, gridY, engine.Switch)
+		app.grid.SetTile(gridX, gridY, engine.Switch, engine.None)
 	}
 
 	// SPACE toggle switch on/off
@@ -44,9 +44,24 @@ func (app *App) Update() error {
 		app.grid.ToggleSwitch(gridX, gridY)
 	}
 
+	// SPACE rotate gates (left/right/up/down)
+	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+		app.grid.RotateGate(gridX, gridY)
+	}
+
 	// NUM1 place light
 	if inpututil.IsKeyJustPressed(ebiten.Key1) {
-		app.grid.SetTile(gridX, gridY, engine.Light)
+		app.grid.SetTile(gridX, gridY, engine.Light, engine.None)
+	}
+
+	// NUM2 place NotGate
+	if inpututil.IsKeyJustPressed(ebiten.Key2) {
+		app.grid.SetTile(gridX, gridY, engine.NotGate, engine.Up)
+	}
+
+	// BACKSPACE sets tile to empty
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+		app.grid.SetTile(gridX, gridY, engine.Empty, engine.None)
 	}
 
 	app.grid.UpdatePower()
@@ -85,6 +100,11 @@ func (app *App) Draw(screen *ebiten.Image) {
 				if tile.Powered {
 					c = color.RGBA{255, 255, 0, 255} // Powered light (Yellow)
 				}
+			} else if tile.Type == engine.NotGate {
+				c = color.RGBA{100, 0, 150, 255} // Unpowered gate (Dark Purple)
+				if tile.Powered {
+					c = color.RGBA{200, 50, 255, 255} // Powered gate (Bright Neon Purple)
+				}
 			}
 
 			// draw the tile
@@ -92,6 +112,34 @@ func (app *App) Draw(screen *ebiten.Image) {
 			rectY := float32(y * TileSize)
 			// the -1 exists so it exists a 1 pixel gap between tiles
 			vector.FillRect(screen, rectX, rectY, float32(TileSize-1), float32(TileSize-1), c, true)
+
+			if tile.Type == engine.NotGate {
+				indSize := float32(4) // A tiny 4x4 pixel dot
+
+				// Find the mathematical center of this specific tile
+				centerX := rectX + float32(TileSize)/2.0 - indSize/2.0
+				centerY := rectY + float32(TileSize)/2.0 - indSize/2.0
+
+				var indX, indY float32
+
+				// Move the dot to the correct edge based on the Facing direction
+				switch tile.Facing {
+				case engine.Up:
+					indX, indY = centerX, rectY
+				case engine.Down:
+					indX, indY = centerX, rectY+float32(TileSize)-indSize-1
+				case engine.Left:
+					indX, indY = rectX, centerY
+				case engine.Right:
+					indX, indY = rectX+float32(TileSize)-indSize-1, centerY
+				default:
+					// If it's engine.None, we just draw it perfectly in the middle
+					indX, indY = centerX, centerY
+				}
+
+				// Draw the tiny black dot to show where the power comes OUT
+				vector.FillRect(screen, indX, indY, indSize, indSize, color.RGBA{0, 0, 0, 255}, true)
+			}
 		}
 	}
 }
