@@ -65,6 +65,11 @@ func (app *App) Update() error {
 		app.grid.SetTile(gridX, gridY, engine.Button, engine.None)
 	}
 
+	// NUM4 place button
+	if inpututil.IsKeyJustPressed(ebiten.Key4) {
+		app.grid.SetTile(gridX, gridY, engine.Diode, engine.Up)
+	}
+
 	// BACKSPACE sets tile to empty
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
 		app.grid.SetTile(gridX, gridY, engine.Empty, engine.None)
@@ -116,6 +121,11 @@ func (app *App) Draw(screen *ebiten.Image) {
 				if tile.Powered {
 					c = color.RGBA{50, 150, 255, 255} // Powered button (Bright Blue)
 				}
+			} else if tile.Type == engine.Diode {
+				c = color.RGBA{100, 100, 50, 255} // Unpowered diode (Gray)
+				if tile.Powered {
+					c = color.RGBA{255, 50, 0, 255} // Powered diode (Red)
+				}
 			}
 
 			// draw the tile
@@ -124,7 +134,7 @@ func (app *App) Draw(screen *ebiten.Image) {
 			// the -1 exists so it exists a 1 pixel gap between tiles
 			vector.FillRect(screen, rectX, rectY, float32(TileSize-1), float32(TileSize-1), c, true)
 
-			if tile.Type == engine.NotGate {
+			if tile.Type == engine.NotGate || tile.Type == engine.Diode {
 				indSize := float32(4) // A tiny 4x4 pixel dot
 
 				// Find the mathematical center of this specific tile

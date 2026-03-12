@@ -54,8 +54,7 @@ func (g *Grid) SetTile(x, y int, compType ComponentType, facing Direction) {
 func (g *Grid) RotateGate(x, y int) {
 	// Make sure its inside the grid size
 	if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
-		switch g.Tiles[x][y].Type {
-		case NotGate:
+		if g.Tiles[x][y].Facing != None {
 			switch g.Tiles[x][y].Facing {
 			case Up:
 				g.Tiles[x][y].Facing = Right
@@ -146,6 +145,8 @@ func (g *Grid) UpdatePower() {
 				g.Tiles[i][j].Powered = false
 			case Light:
 				g.Tiles[i][j].Powered = false
+			case Diode:
+				g.Tiles[i][j].Powered = false
 			}
 		}
 	}
@@ -160,10 +161,13 @@ func (g *Grid) UpdatePower() {
 
 		sourceTile := g.Tiles[currentSource.X][currentSource.Y]
 
-		canGoUp := sourceTile.Type != NotGate || sourceTile.Facing == Up
-		canGoDown := sourceTile.Type != NotGate || sourceTile.Facing == Down
-		canGoLeft := sourceTile.Type != NotGate || sourceTile.Facing == Left
-		canGoRight := sourceTile.Type != NotGate || sourceTile.Facing == Right
+		isLaser := sourceTile.Type == NotGate || sourceTile.Type == Diode
+
+		canGoUp := !isLaser || sourceTile.Facing == Up
+		canGoDown := !isLaser || sourceTile.Facing == Down
+		canGoLeft := !isLaser || sourceTile.Facing == Left
+		canGoRight := !isLaser || sourceTile.Facing == Right
+
 		if canGoUp {
 			if up.X >= 0 && up.X < g.Width && up.Y >= 0 && up.Y < g.Height {
 				if g.Tiles[up.X][up.Y].Type == Wire && !g.Tiles[up.X][up.Y].Powered {
@@ -171,6 +175,9 @@ func (g *Grid) UpdatePower() {
 					powerSource = append(powerSource, up)
 				} else if g.Tiles[up.X][up.Y].Type == Light && !g.Tiles[up.X][up.Y].Powered {
 					g.Tiles[up.X][up.Y].Powered = true
+				} else if g.Tiles[up.X][up.Y].Type == Diode && g.Tiles[up.X][up.Y].Facing == Up && !g.Tiles[up.X][up.Y].Powered {
+					g.Tiles[up.X][up.Y].Powered = true
+					powerSource = append(powerSource, up)
 				}
 			}
 		}
@@ -181,6 +188,9 @@ func (g *Grid) UpdatePower() {
 					powerSource = append(powerSource, down)
 				} else if g.Tiles[down.X][down.Y].Type == Light && !g.Tiles[down.X][down.Y].Powered {
 					g.Tiles[down.X][down.Y].Powered = true
+				} else if g.Tiles[down.X][down.Y].Type == Diode && g.Tiles[down.X][down.Y].Facing == Down && !g.Tiles[down.X][down.Y].Powered {
+					g.Tiles[down.X][down.Y].Powered = true
+					powerSource = append(powerSource, down)
 				}
 			}
 		}
@@ -191,6 +201,9 @@ func (g *Grid) UpdatePower() {
 					powerSource = append(powerSource, left)
 				} else if g.Tiles[left.X][left.Y].Type == Light && !g.Tiles[left.X][left.Y].Powered {
 					g.Tiles[left.X][left.Y].Powered = true
+				} else if g.Tiles[left.X][left.Y].Type == Diode && g.Tiles[left.X][left.Y].Facing == Left && !g.Tiles[left.X][left.Y].Powered {
+					g.Tiles[left.X][left.Y].Powered = true
+					powerSource = append(powerSource, left)
 				}
 			}
 		}
@@ -201,6 +214,9 @@ func (g *Grid) UpdatePower() {
 					powerSource = append(powerSource, right)
 				} else if g.Tiles[right.X][right.Y].Type == Light && !g.Tiles[right.X][right.Y].Powered {
 					g.Tiles[right.X][right.Y].Powered = true
+				} else if g.Tiles[right.X][right.Y].Type == Diode && g.Tiles[right.X][right.Y].Facing == Right && !g.Tiles[right.X][right.Y].Powered {
+					g.Tiles[right.X][right.Y].Powered = true
+					powerSource = append(powerSource, right)
 				}
 			}
 		}

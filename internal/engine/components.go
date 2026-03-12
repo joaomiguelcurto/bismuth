@@ -3,7 +3,7 @@ package engine
 type ComponentType int
 type Direction int
 
-// iota auto assigns numbers -> empty = 0; wire = 1; switch = 0
+// iota auto assigns numbers -> empty = 0; wire = 1; switch = 2
 const (
 	Empty ComponentType = iota
 	Wire
@@ -11,6 +11,7 @@ const (
 	Button
 	Light
 	NotGate
+	Diode
 )
 
 const (
