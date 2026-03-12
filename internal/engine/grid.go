@@ -69,20 +69,14 @@ func (g *Grid) RotateGate(x, y int) {
 	}
 }
 
-func (g *Grid) ToggleSwitch(x, y int) {
+func (g *Grid) ToggleTile(x, y int) {
 	if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
-		// Check if its an actual switch
-		if g.Tiles[x][y].Type == Switch {
+		switch g.Tiles[x][y].Type {
+		case Switch:
 			g.Tiles[x][y].Powered = !g.Tiles[x][y].Powered
-		}
-	}
-}
-
-func (g *Grid) PressButton(x, y int) {
-	if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
-		if g.Tiles[x][y].Type == Button {
-			g.Tiles[x][y].Powered = true
-			g.Tiles[x][y].Timer = 120 // sets timer to 120 frames (60 frames per second)
+		case Button:
+			g.Tiles[x][y].Powered = !g.Tiles[x][y].Powered
+			g.Tiles[x][y].Timer = 120
 		}
 	}
 }

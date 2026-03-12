@@ -3,10 +3,12 @@ package main
 import (
 	"image/color"
 	"log"
+	"strings"
 
 	"bismuth/internal/engine"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -18,7 +20,9 @@ const (
 )
 
 type App struct {
-	grid *engine.Grid
+	grid         *engine.Grid
+	showHelp     bool
+	selectedTool string
 }
 
 func (app *App) Update() error {
@@ -29,50 +33,68 @@ func (app *App) Update() error {
 	gridX := mx / TileSize
 	gridY := my / TileSize
 
+	// H display keybinds
+	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
+		app.showHelp = !app.showHelp
+	}
+
 	// LCLICK place wire
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		app.grid.SetTile(gridX, gridY, engine.Wire, engine.None)
+		switch app.selectedTool {
+		case "wire":
+			app.grid.SetTile(gridX, gridY, engine.Wire, engine.None)
+		case "diode":
+			app.grid.SetTile(gridX, gridY, engine.Diode, engine.Up)
+		case "switch":
+			app.grid.SetTile(gridX, gridY, engine.Switch, engine.None)
+		case "button":
+			app.grid.SetTile(gridX, gridY, engine.Button, engine.None)
+		case "light":
+			app.grid.SetTile(gridX, gridY, engine.Light, engine.None)
+		case "notgate":
+			app.grid.SetTile(gridX, gridY, engine.NotGate, engine.Up)
+		default:
+			app.grid.SetTile(gridX, gridY, engine.Empty, engine.None)
+		}
 	}
 
-	// RCLICK place switch
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
-		app.grid.SetTile(gridX, gridY, engine.Switch, engine.None)
-	}
-
-	// SPACE toggle switch/button on/off
+	// RCLICK toggle on/off
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-		app.grid.ToggleSwitch(gridX, gridY)
-		app.grid.PressButton(gridX, gridY)
+		app.grid.ToggleTile(gridX, gridY)
 	}
 
-	// R rotate gates (left/right/up/down)
+	// R rotate (left/right/up/down)
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		app.grid.RotateGate(gridX, gridY)
-	}
-
-	// NUM1 place light
-	if inpututil.IsKeyJustPressed(ebiten.Key1) {
-		app.grid.SetTile(gridX, gridY, engine.Light, engine.None)
-	}
-
-	// NUM2 place NotGate
-	if inpututil.IsKeyJustPressed(ebiten.Key2) {
-		app.grid.SetTile(gridX, gridY, engine.NotGate, engine.Up)
-	}
-
-	// NUM3 place button
-	if inpututil.IsKeyJustPressed(ebiten.Key3) {
-		app.grid.SetTile(gridX, gridY, engine.Button, engine.None)
-	}
-
-	// NUM4 place button
-	if inpututil.IsKeyJustPressed(ebiten.Key4) {
-		app.grid.SetTile(gridX, gridY, engine.Diode, engine.Up)
 	}
 
 	// BACKSPACE sets tile to empty
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
 		app.grid.SetTile(gridX, gridY, engine.Empty, engine.None)
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.Key1) {
+		app.selectedTool = "wire"
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.Key2) {
+		app.selectedTool = "diode"
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.Key3) {
+		app.selectedTool = "switch"
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.Key4) {
+		app.selectedTool = "button"
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.Key5) {
+		app.selectedTool = "light"
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.Key6) {
+		app.selectedTool = "notgate"
 	}
 
 	app.grid.UpdatePower()
@@ -163,6 +185,36 @@ func (app *App) Draw(screen *ebiten.Image) {
 			}
 		}
 	}
+
+	if app.showHelp {
+		// 1. Define the panel size
+		panelWidth := float32(250)
+		screenHeight := float32(GridHeight * TileSize)
+		panelX := float32(GridWidth*TileSize) - panelWidth // Anchor it to the right side
+
+		// 2. Draw a dark, slightly transparent background for the menu
+		vector.FillRect(screen, panelX, 0, panelWidth, screenHeight, color.RGBA{30, 30, 30, 240}, true)
+
+		// 3. The text to display
+		legend := "=== BISMUTH CONTROLS ===\n\n" +
+			"Left Click : Place Selected\n" +
+			"Spacebar   : Toggle Tile\n" +
+			"R          : Rotate Tile\n" +
+			"Backspace  : Clear Tile\n" +
+			"Num 1      : Select Wire\n" +
+			"Num 2      : Select Diode\n" +
+			"Num 3      : Select Switch\n" +
+			"Num 5      : Select Button\n" +
+			"Num 6      : Select Light\n" +
+			"Num 7      : Select NotGate\n" +
+			"Press 'H' to hide/show this menu"
+
+		// 4. Print the text onto the panel
+		ebitenutil.DebugPrintAt(screen, legend, int(panelX)+20, 20)
+	}
+
+	bottomY := (GridHeight * TileSize) - 20
+	ebitenutil.DebugPrintAt(screen, "Tool selected > "+strings.Title(app.selectedTool), 10, bottomY)
 }
 
 // tells Ebitengine how big the window should be
@@ -173,7 +225,8 @@ func (app *App) Layout(outsideWidth, outsideHeight int) (int, int) {
 func main() {
 	// create app and initialize grid
 	myApp := &App{
-		grid: engine.NewGrid(GridWidth, GridHeight),
+		grid:         engine.NewGrid(GridWidth, GridHeight),
+		selectedTool: "wire",
 	}
 
 	// window config
