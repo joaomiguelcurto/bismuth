@@ -6,6 +6,7 @@ type Direction int
 // iota auto assigns numbers -> empty = 0; wire = 1; switch = 2
 const (
 	Empty ComponentType = iota
+	Via
 	Wire
 	Switch
 	Button

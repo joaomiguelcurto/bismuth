@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"log"
+	"strconv"
 	"strings"
 
 	"bismuth/internal/engine"
@@ -16,61 +17,72 @@ import (
 const (
 	GridWidth  = 40
 	GridHeight = 40
-	TileSize   = 20 // each tile is x pixels on the screen
+	TileSize   = 20
 )
 
 type App struct {
 	grid         *engine.Grid
 	showHelp     bool
 	selectedTool string
+	currentLayer int
 }
 
 func (app *App) Update() error {
-	// get mouse pos
 	mx, my := ebiten.CursorPosition()
 
-	// convert pixel to grid cords
 	gridX := mx / TileSize
 	gridY := my / TileSize
+	gridZ := app.currentLayer
 
-	// H display keybinds
 	if inpututil.IsKeyJustPressed(ebiten.KeyH) {
 		app.showHelp = !app.showHelp
 	}
 
-	// LCLICK place wire
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		switch app.selectedTool {
 		case "wire":
-			app.grid.SetTile(gridX, gridY, engine.Wire, engine.None)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Wire, engine.None)
 		case "diode":
-			app.grid.SetTile(gridX, gridY, engine.Diode, engine.Up)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Diode, engine.Up)
 		case "switch":
-			app.grid.SetTile(gridX, gridY, engine.Switch, engine.None)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Switch, engine.None)
 		case "button":
-			app.grid.SetTile(gridX, gridY, engine.Button, engine.None)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Button, engine.None)
 		case "light":
-			app.grid.SetTile(gridX, gridY, engine.Light, engine.None)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Light, engine.None)
 		case "notgate":
-			app.grid.SetTile(gridX, gridY, engine.NotGate, engine.Up)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.NotGate, engine.Up)
+		case "via":
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Via, engine.None)
 		default:
-			app.grid.SetTile(gridX, gridY, engine.Empty, engine.None)
+			app.grid.SetTile(gridX, gridY, gridZ, engine.Empty, engine.None)
 		}
 	}
 
-	// RCLICK toggle on/off
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-		app.grid.ToggleTile(gridX, gridY)
+		app.grid.ToggleTile(gridX, gridY, gridZ)
 	}
 
-	// R rotate (left/right/up/down)
 	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-		app.grid.RotateGate(gridX, gridY)
+		app.grid.RotateGate(gridX, gridY, gridZ)
 	}
 
-	// BACKSPACE sets tile to empty
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-		app.grid.SetTile(gridX, gridY, engine.Empty, engine.None)
+		app.grid.SetTile(gridX, gridY, gridZ, engine.Empty, engine.None)
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+		app.currentLayer++
+		if app.currentLayer >= app.grid.Layers {
+			app.currentLayer = 0
+		}
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+		app.currentLayer--
+		if app.currentLayer < 0 {
+			app.currentLayer = app.grid.Layers - 1
+		}
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key1) {
@@ -97,75 +109,88 @@ func (app *App) Update() error {
 		app.selectedTool = "notgate"
 	}
 
+	if inpututil.IsKeyJustPressed(ebiten.Key7) {
+		app.selectedTool = "via"
+	}
+
 	app.grid.UpdatePower()
 
 	return nil
 }
 
-// Draw runs right after update
 func (app *App) Draw(screen *ebiten.Image) {
-	// paint the whole background dark gray
 	screen.Fill(color.RGBA{20, 20, 20, 255})
 
-	// loop through the 2d grid
 	for x := 0; x < app.grid.Width; x++ {
 		for y := 0; y < app.grid.Height; y++ {
-			tile := app.grid.Tiles[x][y]
+			tile := app.grid.Tiles[x][y][app.currentLayer]
 
 			if tile.Type == engine.Empty {
-				continue // skip empty tiles
+				continue
 			}
 
-			// pick color depending on what the tile is
 			var c color.Color
 			if tile.Type == engine.Wire {
-				c = color.RGBA{100, 100, 100, 255} // Unpowered wire (Gray)
+				c = color.RGBA{100, 100, 100, 255}
 				if tile.Powered {
-					c = color.RGBA{255, 50, 50, 255} // Powered wire (Red)
+					c = color.RGBA{255, 50, 50, 255}
 				}
 			} else if tile.Type == engine.Switch {
-				c = color.RGBA{0, 100, 0, 255} // Unpowered switch (Dark Green)
+				c = color.RGBA{0, 100, 0, 255}
 				if tile.Powered {
-					c = color.RGBA{50, 255, 50, 255} // Powered switch (Bright Green)
+					c = color.RGBA{50, 255, 50, 255}
 				}
 			} else if tile.Type == engine.Light {
-				c = color.RGBA{145, 145, 0, 255} // Unpowered light (Dark Yellow)
+				c = color.RGBA{145, 145, 0, 255}
 				if tile.Powered {
-					c = color.RGBA{255, 255, 0, 255} // Powered light (Yellow)
+					c = color.RGBA{255, 255, 0, 255}
 				}
 			} else if tile.Type == engine.NotGate {
-				c = color.RGBA{100, 0, 150, 255} // Unpowered gate (Dark Purple)
+				c = color.RGBA{100, 0, 150, 255}
 				if tile.Powered {
-					c = color.RGBA{200, 50, 255, 255} // Powered gate (Bright Neon Purple)
+					c = color.RGBA{200, 50, 255, 255}
 				}
 			} else if tile.Type == engine.Button {
-				c = color.RGBA{0, 70, 150, 255} // Unpowered button (Dark Blue)
+				c = color.RGBA{0, 70, 150, 255}
 				if tile.Powered {
-					c = color.RGBA{50, 150, 255, 255} // Powered button (Bright Blue)
+					c = color.RGBA{50, 150, 255, 255}
 				}
 			} else if tile.Type == engine.Diode {
-				c = color.RGBA{100, 100, 50, 255} // Unpowered diode (Gray)
+				c = color.RGBA{100, 100, 50, 255}
 				if tile.Powered {
-					c = color.RGBA{255, 50, 0, 255} // Powered diode (Red)
+					c = color.RGBA{255, 50, 0, 255}
+				}
+			} else if tile.Type == engine.Via {
+				c = color.RGBA{50, 150, 150, 255}
+				if tile.Powered {
+					c = color.RGBA{100, 255, 255, 255}
 				}
 			}
 
-			// draw the tile
 			rectX := float32(x * TileSize)
 			rectY := float32(y * TileSize)
-			// the -1 exists so it exists a 1 pixel gap between tiles
 			vector.FillRect(screen, rectX, rectY, float32(TileSize-1), float32(TileSize-1), c, true)
 
-			if tile.Type == engine.NotGate || tile.Type == engine.Diode {
-				indSize := float32(4) // A tiny 4x4 pixel dot
+			if tile.Type == engine.Via {
+				indSize := float32(8)
+				centerX := rectX + float32(TileSize)/2.0 - indSize/2.0
+				centerY := rectY + float32(TileSize)/2.0 - indSize/2.0
 
-				// Find the mathematical center of this specific tile
+				holeColor := color.RGBA{0, 0, 0, 255}
+				if tile.Powered {
+					holeColor = color.RGBA{255, 255, 255, 255}
+				}
+				vector.FillRect(screen, centerX, centerY, indSize, indSize, holeColor, true)
+			}
+
+			if tile.Type == engine.NotGate || tile.Type == engine.Diode {
+				indSize := float32(4)
+
 				centerX := rectX + float32(TileSize)/2.0 - indSize/2.0
 				centerY := rectY + float32(TileSize)/2.0 - indSize/2.0
 
 				var indX, indY float32
 
-				// Move the dot to the correct edge based on the Facing direction
 				switch tile.Facing {
 				case engine.Up:
 					indX, indY = centerX, rectY
@@ -176,64 +201,58 @@ func (app *App) Draw(screen *ebiten.Image) {
 				case engine.Right:
 					indX, indY = rectX+float32(TileSize)-indSize-1, centerY
 				default:
-					// If it's engine.None, we just draw it perfectly in the middle
 					indX, indY = centerX, centerY
 				}
 
-				// Draw the tiny black dot to show where the power comes OUT
 				vector.FillRect(screen, indX, indY, indSize, indSize, color.RGBA{0, 0, 0, 255}, true)
 			}
 		}
 	}
 
 	if app.showHelp {
-		// 1. Define the panel size
 		panelWidth := float32(250)
 		screenHeight := float32(GridHeight * TileSize)
-		panelX := float32(GridWidth*TileSize) - panelWidth // Anchor it to the right side
+		panelX := float32(GridWidth*TileSize) - panelWidth
 
-		// 2. Draw a dark, slightly transparent background for the menu
 		vector.FillRect(screen, panelX, 0, panelWidth, screenHeight, color.RGBA{30, 30, 30, 240}, true)
 
-		// 3. The text to display
 		legend := "=== BISMUTH CONTROLS ===\n\n" +
 			"Left Click : Place Selected\n" +
 			"Spacebar   : Toggle Tile\n" +
 			"R          : Rotate Tile\n" +
 			"Backspace  : Clear Tile\n" +
+			"Up/Down    : Change Layer\n" +
 			"Num 1      : Select Wire\n" +
 			"Num 2      : Select Diode\n" +
 			"Num 3      : Select Switch\n" +
-			"Num 5      : Select Button\n" +
-			"Num 6      : Select Light\n" +
-			"Num 7      : Select NotGate\n" +
+			"Num 4      : Select Button\n" +
+			"Num 5      : Select Light\n" +
+			"Num 6      : Select NotGate\n" +
+			"Num 7      : Select Via\n\n" +
 			"Press 'H' to hide/show this menu"
 
-		// 4. Print the text onto the panel
 		ebitenutil.DebugPrintAt(screen, legend, int(panelX)+20, 20)
 	}
 
 	bottomY := (GridHeight * TileSize) - 20
-	ebitenutil.DebugPrintAt(screen, "Tool selected > "+strings.Title(app.selectedTool), 10, bottomY)
+	layerInfo := " | Layer: " + strconv.Itoa(app.currentLayer)
+	ebitenutil.DebugPrintAt(screen, "Tool selected > "+strings.Title(app.selectedTool)+layerInfo, 10, bottomY)
 }
 
-// tells Ebitengine how big the window should be
 func (app *App) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return GridWidth * TileSize, GridHeight * TileSize
 }
 
 func main() {
-	// create app and initialize grid
 	myApp := &App{
-		grid:         engine.NewGrid(GridWidth, GridHeight),
+		grid:         engine.NewGrid(GridWidth, GridHeight, 3), // Creates 3 layers!
 		selectedTool: "wire",
+		currentLayer: 0,
 	}
 
-	// window config
 	ebiten.SetWindowSize(GridWidth*TileSize, GridHeight*TileSize)
 	ebiten.SetWindowTitle("Bismuth")
 
-	// starts game loop
 	if err := ebiten.RunGame(myApp); err != nil {
 		log.Fatal(err)
 	}
